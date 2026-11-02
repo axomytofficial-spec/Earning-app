@@ -1,0 +1,32 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rewards Admin</title>
+<style>
+body{font-family:system-ui,sans-serif;margin:16px;max-width:900px}
+table{border-collapse:collapse;width:100%;margin-bottom:24px}
+td,th{border-bottom:1px solid #ddd;padding:6px;text-align:left;font-size:14px}
+.wrap{overflow-x:auto} button{margin-right:4px} .flag{color:#c00;font-weight:600}
+</style></head><body>
+<h2>Rewards Admin</h2>
+<input id="key" type="password" placeholder="Admin key"> <button onclick="load()">Load</button>
+<h3>Pending withdrawals</h3><div class="wrap"><table id="w"></table></div>
+<h3>Users (latest 200)</h3><div class="wrap"><table id="u"></table></div>
+<script>
+const H=()=>({'x-admin-key':document.getElementById('key').value,'Content-Type':'application/json'});
+const rs=p=>'₹'+(p/100).toFixed(2);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function load(){
+  const [w,u]=await Promise.all([fetch('/admin/withdrawals',{headers:H()}),fetch('/admin/users',{headers:H()})]);
+  if(!w.ok){alert('Wrong key');return}
+  const W=await w.json(), U=await u.json();
+  document.getElementById('w').innerHTML='<tr><th>ID</th><th>User</th><th>Amount</th><th>UPI</th><th>Flag</th><th></th></tr>'+
+    W.map(x=>`<tr><td>${x.id}</td><td>${x.user_id}</td><td>${rs(x.amount)}</td><td>${esc(x.upi)}</td>
+    <td class="flag">${x.flagged?'FLAGGED':''}</td>
+    <td><button onclick="act(${x.id},'approve')">Mark paid</button><button onclick="act(${x.id},'reject')">Reject</button></td></tr>`).join('');
+  document.getElementById('u').innerHTML='<tr><th>ID</th><th>Phone</th><th>Ads</th><th>Balance</th><th>Referred by</th><th></th></tr>'+
+    U.map(x=>`<tr><td>${x.id}</td><td>${esc(x.phone)}</td><td>${x.ads}</td><td>${rs(x.balance)}</td><td>${x.referred_by??''}</td>
+    <td>${x.flagged?'<span class="flag">flagged</span> ':''}<button onclick="flag(${x.id},${x.flagged?0:1})">${x.flagged?'Unflag':'Flag'}</button></td></tr>`).join('');
+}
+async function act(id,a){await fetch(`/admin/withdrawals/${id}/${a}`,{method:'POST',headers:H()});load()}
+async function flag(id,f){await fetch(`/admin/users/${id}/flag`,{method:'POST',headers:H(),body:JSON.stringify({flagged:!!f})});load()}
+</script></body></html>
