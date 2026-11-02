@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: rewards-backend
+    runtime: node
+    plan: free            # free = database is wiped on restart. Testing only.
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: ADMIN_KEY
+        generateValue: true   # Render creates a random key; see it under Environment
+      - key: MSG91_KEY
+        sync: false           # you enter this in the Render dashboard
+      - key: MSG91_TEMPLATE
+        sync: false
+    # Before real users: change plan to "starter", delete the "#" on the lines
+    # below, and set DB_PATH, so balances survive restarts.
+    # disk:
+    #   name: data
+    #   mountPath: /data
+    #   sizeGB: 1
+    # (and add under envVars:  - key: DB_PATH   value: /data/rewards.db)
